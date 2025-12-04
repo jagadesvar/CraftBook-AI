@@ -56,7 +56,7 @@ app.use((err, req, res, next) => {
 // ⚡ SERVE FRONTEND BUILD (Vite)
 // -------------------------------------------------------------
 
-// Path: backend/public (where Render will copy the frontend/dist)
+// Path: backend/public (where Render copies the frontend/dist)
 const publicPath = path.join(__dirname, "public");
 
 // If the folder exists, serve static files + enable SPA fallback
@@ -67,7 +67,8 @@ if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
 
   // SPA fallback — return index.html for any non-API route
-  app.get("*", (req, res) => {
+  // Use '/*' pattern to avoid path-to-regexp issues with '*'
+  app.get("/*", (req, res) => {
     // Prevent API routes from being hijacked
     if (req.path.startsWith("/api")) return res.status(404).json({ message: "API route not found" });
 
