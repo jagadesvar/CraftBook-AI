@@ -55,27 +55,26 @@ app.use((err, req, res, next) => {
 // -------------------------------------------------------------
 // ⚡ SERVE FRONTEND BUILD (Vite)
 // -------------------------------------------------------------
-
-// Path: backend/public (where Render copies the frontend/dist)
 const publicPath = path.join(__dirname, "public");
 
-// If the folder exists, serve static files + enable SPA fallback
 if (fs.existsSync(publicPath)) {
   console.log("Serving frontend from:", publicPath);
 
   // Serve static assets
   app.use(express.static(publicPath));
 
-  // SPA fallback — return index.html for any non-API route
-  // Use '/*' pattern to avoid path-to-regexp issues with '*'
-  app.get("/*", (req, res) => {
-    // Prevent API routes from being hijacked
-    if (req.path.startsWith("/api")) return res.status(404).json({ message: "API route not found" });
+  // SPA fallback middleware (safe — avoids path-to-regexp pattern parsing)
+  app.use((req, res, next) => {
+    // Let API routes go to their handlers
+    if (req.path.startsWith("/api")) return next();
 
-    res.sendFile(path.join(publicPath, "index.html"), (err) => {
+    // If the request matches a static file (served above), let Express handle it.
+    // Otherwise send index.html so the client-side router can handle the route.
+    const indexHtmlPath = path.join(publicPath, "index.html");
+    res.sendFile(indexHtmlPath, (err) => {
       if (err) {
-        console.error("Error serving index.html:", err);
-        res.status(500).send(err);
+        console.error("Error sending index.html:", err);
+        if (!res.headersSent) res.status(500).send("Server error");
       }
     });
   });
